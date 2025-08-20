@@ -19,14 +19,14 @@ pipeline{
             checkout scm   
             }
             
-        },
+        }
         stage('Docker Build'){
             steps{
                echo "construindo a imagem docker"
                 sh "docker build -t ${DOCKER_REGISTRY}/${APP_NAME}:${IMAGE_TAG} ." 
             }
             
-        },
+        }
         stage('PostgreSQL Test DB'){
                 steps{
                     echo "Iniando container PostgreSQL para testes"
@@ -36,7 +36,7 @@ pipeline{
                     sleep 10
                     """
                 } 
-        },   
+        }
         stage('docker Test'){
             steps{
                 echo "rodando testes dentro do container..."
@@ -48,7 +48,7 @@ pipeline{
 
             }
             
-        },
+        }
         stage ('docker Push'){
             steps{
                echo "Imagem pronta para deploy" 
