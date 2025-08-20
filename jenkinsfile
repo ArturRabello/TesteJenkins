@@ -1,0 +1,75 @@
+pipeline{
+    agent any
+
+    environment {
+        APP_NAME = "produto_service"
+        DOCKER_REGISTRY = "ArturRabello"
+        IMAGE_TAG  = "${env.BUILD_NUMBER}"
+    }
+
+    options {
+        skipStagesAfterUnstable()
+        timestamps()
+    }
+
+    stages {
+        stage('Checkout'){
+            steps {
+                echo "fazendo chekout do codigo fonte"
+            checkout scm   
+            }
+            
+        },
+        stage('Docker Build'){
+            steps{
+               echo "construindo a imagem docker"
+                sh "docker build -t ${DOCKER_REGISTRY}/${APP_NAME}:${IMAGE_TAG} ." 
+            }
+            
+        },
+        stage('PostgreSQL Test DB'){
+                steps{
+                    echo "Iniando container PostgreSQL para testes"
+                    sh """
+                    docker run --name pg-test -e POSTGRES_USER=test -e POSTGRES_PASSWORD=test \
+                        -e POSTGRES_DB=testdb -d -p 5432:5432 postgres:15
+                    sleep 10
+                    """
+                } 
+        },   
+        stage('docker Test'){
+            steps{
+                echo "rodando testes dentro do container..."
+                sh """
+                    docker run --rm --env DATABASE_URL=postgresql://test:test@host.docker.internal:5432/testdb \
+                    ${DOCKER_REGISTRY}/${APP_NAME}:${IMAGE_TAG} \
+                    sh -c "pip install -r requirements.txt && pytest  --maxfail=1 --disable-warnings -q"
+                """
+
+            }
+            
+        },
+        stage ('docker Push'){
+            steps{
+               echo "Imagem pronta para deploy" 
+            }
+            
+        }
+    
+    post {
+        always {
+            echo "Parando e removendo container PostgreSQL de teste"
+            sh """
+            docker stop pg-test
+            docker rm pg-test
+            """
+        }
+        success {
+            echo "Deploy realizado com sucesso"
+        }
+        failure {
+            echo "Deploy falhou"
+        }
+    }
+    }
+}
