@@ -68,7 +68,7 @@ pipeline{
             echo "Deploy realizado com sucesso"
         }
         failure {
-            echo "Deploy falhou"
+            echo "Deploy falhouu"
         }
     }
     }
